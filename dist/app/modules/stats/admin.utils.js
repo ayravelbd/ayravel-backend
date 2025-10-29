@@ -24,16 +24,69 @@ const getSalesAndCostStats = (...args_1) => __awaiter(void 0, [...args_1], void 
                 createdAt: { $gte: startDate, $lte: today },
             },
         },
+        { $unwind: '$orderInfo' },
         {
-            $unwind: '$orderInfo',
+            $lookup: {
+                from: 'products',
+                localField: 'orderInfo.productInfo',
+                foreignField: '_id',
+                as: 'productData',
+            },
         },
+        { $unwind: '$productData' },
+        {
+            $lookup: {
+                from: 'shops',
+                localField: 'orderInfo.shopInfo',
+                foreignField: '_id',
+                as: 'shopData',
+            },
+        },
+        { $unwind: '$shopData' },
+        {
+            $lookup: {
+                from: 'vendors',
+                localField: 'orderInfo.vendorId',
+                foreignField: '_id',
+                as: 'vendorData',
+            },
+        },
+        {
+            $unwind: {
+                path: '$vendorData',
+                preserveNullAndEmptyArrays: true,
+            },
+        },
+        {
+            $lookup: {
+                from: 'customers',
+                localField: 'orderInfo.orderBy',
+                foreignField: '_id',
+                as: 'customerData',
+            },
+        },
+        { $unwind: '$customerData' },
         {
             $group: {
                 _id: {
                     $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
                 },
-                totalSales: { $sum: '$orderInfo.totalAmount.total' },
-                totalCost: { $sum: '$orderInfo.totalAmount.subTotal' },
+                totalSales: {
+                    $sum: {
+                        $multiply: [
+                            '$productData.productInfo.salePrice',
+                            '$orderInfo.quantity',
+                        ],
+                    },
+                },
+                totalCost: {
+                    $sum: {
+                        $multiply: [
+                            '$productData.productInfo.price',
+                            '$orderInfo.quantity',
+                        ],
+                    },
+                },
             },
         },
         { $sort: { _id: 1 } },
@@ -46,23 +99,6 @@ const getSalesAndCostStats = (...args_1) => __awaiter(void 0, [...args_1], void 
             },
         },
     ]);
-    const allOrders = yield order_model_1.OrderModel.aggregate([
-        {
-            $group: {
-                _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-                dailySales: { $sum: '$totalAmount' },
-            },
-        },
-        { $sort: { _id: 1 } },
-    ]);
-    let maxSales = 0;
-    for (let i = 0; i <= allOrders.length - days; i++) {
-        const windowSum = allOrders
-            .slice(i, i + days)
-            .reduce((sum, d) => sum + d.dailySales, 0);
-        if (windowSum > maxSales)
-            maxSales = windowSum;
-    }
     const stats = [];
     for (let i = days - 1; i >= 0; i--) {
         const d = new Date();
@@ -83,9 +119,7 @@ const getSalesAndCostStats = (...args_1) => __awaiter(void 0, [...args_1], void 
         days,
         totalSalesSum,
         totalCostSum,
-        maxSales: maxSales,
         stats,
-        isCurrentAboveMax: totalSalesSum > maxSales,
     };
 });
 exports.getSalesAndCostStats = getSalesAndCostStats;

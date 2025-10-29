@@ -34,10 +34,35 @@ const vendorSalesAndCostStats = (...args_1) => __awaiter(void 0, [...args_1], vo
         { $unwind: '$orderInfo' },
         { $match: matchFilter },
         {
+            $lookup: {
+                from: 'products',
+                localField: 'orderInfo.productInfo',
+                foreignField: '_id',
+                as: 'productData',
+            },
+        },
+        { $unwind: '$productData' },
+        {
             $group: {
-                _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-                totalSales: { $sum: '$orderInfo.totalAmount.total' },
-                totalCost: { $sum: '$orderInfo.totalAmount.subTotal' },
+                _id: {
+                    $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+                },
+                totalSales: {
+                    $sum: {
+                        $multiply: [
+                            '$productData.productInfo.salePrice',
+                            '$orderInfo.quantity',
+                        ],
+                    },
+                },
+                totalCost: {
+                    $sum: {
+                        $multiply: [
+                            '$productData.productInfo.price',
+                            '$orderInfo.quantity',
+                        ],
+                    },
+                },
             },
         },
         { $sort: { _id: 1 } },
@@ -52,13 +77,29 @@ const vendorSalesAndCostStats = (...args_1) => __awaiter(void 0, [...args_1], vo
     ]);
     const allOrders = yield order_model_1.OrderModel.aggregate([
         { $unwind: '$orderInfo' },
+        vendorObjectId
+            ? { $match: { 'orderInfo.vendorId': vendorObjectId } }
+            : { $match: {} },
         {
-            $match: vendorObjectId ? { 'orderInfo.vendorId': vendorObjectId } : {},
+            $lookup: {
+                from: 'products',
+                localField: 'orderInfo.productInfo',
+                foreignField: '_id',
+                as: 'productData',
+            },
         },
+        { $unwind: '$productData' },
         {
             $group: {
                 _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-                dailySales: { $sum: '$orderInfo.totalAmount.total' },
+                dailySales: {
+                    $sum: {
+                        $multiply: [
+                            '$productData.productInfo.salePrice',
+                            '$orderInfo.quantity',
+                        ],
+                    },
+                },
             },
         },
         { $sort: { _id: 1 } },

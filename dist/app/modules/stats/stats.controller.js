@@ -19,7 +19,7 @@ const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
 const stats_service_1 = require("./stats.service");
 const getAdminStats = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const payload = {
-        days: 10
+        days: 7
     };
     const result = yield stats_service_1.statsServices.getAdminStatsFromDB(payload);
     (0, sendResponse_1.default)(res, {
@@ -31,7 +31,7 @@ const getAdminStats = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
 }));
 const getVendorStats = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const payload = {
-        days: 3
+        days: 7
     };
     const result = yield stats_service_1.statsServices.getVendorStatsFromDB(payload, req.params.id);
     (0, sendResponse_1.default)(res, {

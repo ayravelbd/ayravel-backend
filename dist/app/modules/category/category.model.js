@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CategoryModel = void 0;
 const mongoose_1 = require("mongoose");
 const iconSchema = new mongoose_1.Schema({
-    name: { type: String, required: true },
+    name: { type: String },
     url: { type: String },
 }, { _id: false } // Prevents creating a separate _id for icon
 );
@@ -29,8 +29,7 @@ const categorySchema = new mongoose_1.Schema({
         required: [true, "A banner image is required to create category!"],
     },
     subCategories: {
-        type: [mongoose_1.Schema.Types.ObjectId],
-        ref: "category",
+        type: [String],
     },
 }, {
     timestamps: true,
